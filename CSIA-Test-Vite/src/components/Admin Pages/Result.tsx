@@ -15,6 +15,12 @@ function Result() {
   let currentRaceNum = -1;
 
   useEffect(() => {
+    if (account && account.getRole() !== "admin") {
+      navigate("/");
+    }
+  }, [account]);
+
+  useEffect(() => {
     async function loadDrivers() {
       const { data, error } = await supabase
         .from("Driver")
@@ -206,6 +212,29 @@ function Result() {
     console.log("updateLeaderboard ran");
   }
 
+  async function handleResetSeason() {
+    const { error: playersError } = await supabase
+      .from("Player")
+      .update({ totalPoints: 0, gainedPoints: 0 })
+      .not("userId", "is", null);
+    if (playersError) {
+      console.error("Error resetting player points", playersError.message);
+      return;
+    }
+
+    const { error: raceNumError } = await supabase
+      .from("CurrentRaceNum")
+      .update({ currentRaceNum: 1 })
+      .eq("id", 1);
+    if (raceNumError) {
+      console.error("Error resetting race number", raceNumError.message);
+      return;
+    }
+
+    setRaceNum(1);
+    console.log("Season reset");
+  }
+
   type PlayerType = {
     name: string;
     totalScore: number;
@@ -275,6 +304,10 @@ function Result() {
 
       <button className="btn btn-primary w-100 mt-3" onClick={handleSubmit}>
         Submit Result
+      </button>
+
+      <button className="btn btn-danger w-100 mt-2" onClick={handleResetSeason}>
+        Reset Season
       </button>
 
       <div className="d-flex justify-content-center gap-3 mt-4">
